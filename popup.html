@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<style>
+  body {
+    width: 320px;
+    font-family: -apple-system, "PingFang TC", "Microsoft JhengHei", sans-serif;
+    font-size: 14px;
+    margin: 0;
+    padding: 14px;
+    background: #fafafa;
+    color: #333;
+  }
+  h1 { font-size: 16px; margin: 0 0 12px; }
+  .field { margin-bottom: 12px; }
+  label { display: block; font-weight: 600; margin-bottom: 4px; }
+  .hint { font-size: 12px; color: #888; margin-top: 3px; line-height: 1.5; }
+  input[type="text"], textarea {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 6px 8px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    font-size: 14px;
+    font-family: inherit;
+  }
+  textarea { height: 60px; resize: vertical; }
+  .toggle { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+  .toggle label { margin: 0; font-weight: normal; }
+  .toggle input { width: 16px; height: 16px; }
+  .main-toggle label { font-weight: 700; }
+  button {
+    width: 100%;
+    padding: 9px;
+    border: none;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    margin-top: 4px;
+  }
+  #save { background: #2196c9; color: #fff; }
+  #run { background: #fff; color: #2196c9; border: 1px solid #2196c9; margin-top: 8px; }
+  #status { font-size: 12px; color: #2e7d32; text-align: center; height: 16px; margin-top: 6px; }
+  .warn { font-size: 12px; color: #b26a00; background: #fff6e5; border-radius: 6px; padding: 8px; margin-top: 10px; line-height: 1.5; }
+</style>
+</head>
+<body>
+  <h1>🎫 TicketPlus 購票小幫手</h1>
+
+  <div class="toggle main-toggle">
+    <input type="checkbox" id="enabled">
+    <label for="enabled">啟用自動模式（進頁面自動執行）</label>
+  </div>
+
+  <div class="field">
+    <label for="sessionKeyword">場次關鍵字</label>
+    <input type="text" id="sessionKeyword" placeholder="例：08-14 或 19:30（留空 = 第一個可買場次）">
+    <div class="hint">比對場次列的日期／時間／名稱文字</div>
+  </div>
+
+  <div class="field">
+    <label for="ticketRules">票種與張數（一行一條）</label>
+    <textarea id="ticketRules" placeholder="全票 2&#10;身障票 1"></textarea>
+    <div class="hint">格式：「票種關鍵字 張數」，用 <b>*</b> 代表第一個票種，例：<b>* 2</b></div>
+  </div>
+
+  <div class="toggle">
+    <input type="checkbox" id="autoAgree">
+    <label for="autoAgree">自動勾選「我已閱讀並同意」條款</label>
+  </div>
+
+  <div class="toggle">
+    <input type="checkbox" id="autoNext">
+    <label for="autoNext">填完自動點「下一步」（送出前請自行確認）</label>
+  </div>
+
+  <button id="save">💾 儲存設定</button>
+  <button id="run">▶ 在目前分頁立即執行</button>
+  <div id="status"></div>
+
+  <div class="warn">⚠️ 本工具僅加速個人購票的表單填寫，請自行確認票種、張數與條款內容後再送出訂單。</div>
+
+  <script src="popup.js"></script>
+</body>
+</html>
