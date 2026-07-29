@@ -1,15 +1,15 @@
-// 售票表單填寫輔助 - 狀態讀取（在頁面主環境 MAIN world 執行）
+// TicketPlus 購票小幫手 - 網路觀察器（在頁面主環境 MAIN world 執行）
 //
 // 用途：content script 跑在隔離環境，看不到頁面自己的 axios 請求，
-// 所以這支在主環境掛鉤 XHR / fetch，把相關 API 的回應內容轉發給 content script 顯示。
+// 所以這支在主環境攔截 XHR / fetch，把購票相關 API 的回應轉發給 content script。
 //
-// 重要：這裡「只讀不改」——不修改請求、不重送請求、不改變網站原有的
-// 重試頻率或時間間隔，純粹把網站原本就在做的事顯示出來。
+// 重要：這裡「只讀不改」——不攔截、不重送、不改變任何請求或重試頻率，
+// 純粹把網站原本就在做的事顯示出來。
 
 (() => {
   'use strict';
 
-  // 只讀取流程相關端點的回應
+  // 只觀察購票流程相關端點
   const WATCH = /\/(enqueue|reserve|release|update|confirm|getShippingFee|getUserCurrentReservedOrder)(\?|$)/;
 
   function report(payload) {
@@ -26,7 +26,7 @@
     report({ kind: 'api', api: m ? m[1] : url, httpStatus: status, body });
   }
 
-  // ===== 掛鉤 XMLHttpRequest（axios 預設走這個）=====
+  // ===== 攔截 XMLHttpRequest（axios 預設走這個）=====
   const proto = XMLHttpRequest.prototype;
   const origOpen = proto.open;
   const origSend = proto.send;
@@ -50,7 +50,7 @@
     return origSend.apply(this, arguments);
   };
 
-  // ===== 掛鉤 fetch（保險，網站若改用 fetch 也能讀取）=====
+  // ===== 攔截 fetch（保險，網站若改用 fetch 也能觀察）=====
   const origFetch = window.fetch;
   if (origFetch) {
     window.fetch = function (input, init) {
@@ -65,8 +65,8 @@
   }
 
   // ===== 監看 window.isEnquene =====
-  // 這是網站前端的處理總開關：一旦變成 false，後續所有 enqueue 請求
-  // 都會在送出前被 `if(!window.isEnquene) return false` 擋下（等於流程已結束）。
+  // 這是網站前端的排隊總開關：一旦變成 false，後續所有 enqueue 請求
+  // 都會在送出前被 `if(!window.isEnquene) return false` 攔掉（等於流程已死）。
   let lastFlag;
   setInterval(() => {
     const v = window.isEnquene;

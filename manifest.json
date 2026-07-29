@@ -1,37 +1,25 @@
 {
   "manifest_version": 3,
-  "name": "售票表單填寫輔助",
+  "name": "TicketPlus 購票小幫手",
   "version": "1.1.0",
-  "description": "協助填寫表單欄位並顯示網站處理狀態；適用於 ticketplus.com.tw，與該網站無隸屬關係。",
-  "permissions": [
-    "storage"
-  ],
-  "host_permissions": [
-    "https://ticketplus.com.tw/*"
-  ],
+  "description": "遠大售票（ticketplus.com.tw）購票輔助：自動選場次、快速填票數、勾選同意條款、顯示排隊狀態",
+  "permissions": ["storage"],
+  "host_permissions": ["https://ticketplus.com.tw/*"],
   "content_scripts": [
     {
-      "matches": [
-        "https://ticketplus.com.tw/*"
-      ],
-      "js": [
-        "inject.js"
-      ],
+      "matches": ["https://ticketplus.com.tw/*"],
+      "js": ["inject.js"],
       "run_at": "document_start",
       "world": "MAIN"
     },
     {
-      "matches": [
-        "https://ticketplus.com.tw/*"
-      ],
-      "js": [
-        "content.js"
-      ],
+      "matches": ["https://ticketplus.com.tw/*"],
+      "js": ["content.js"],
       "run_at": "document_idle"
     }
   ],
   "action": {
     "default_popup": "popup.html",
-    "default_title": "售票表單填寫輔助"
+    "default_title": "TicketPlus 購票小幫手"
   }
 }
