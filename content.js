@@ -1,4 +1,4 @@
-// TicketPlus 購票小幫手 - content script
+// 售票表單填寫輔助 - content script
 // 因為 ticketplus 是 Vue/Vuetify SPA，路由切換不會重新載入頁面，
 // 所以用輪詢 + 網址變化偵測的方式，在對的頁面執行對的動作。
 //
@@ -39,7 +39,7 @@
   const textOf = (el) => ((el && el.innerText) || '').replace(/\s+/g, ' ').trim();
 
   function log(msg) {
-    console.log('[TicketPlus小幫手]', msg);
+    console.log('[售票表單輔助]', msg);
     showToast(msg);
   }
 
@@ -222,14 +222,14 @@
     return acted;
   }
 
-  // ===== 排隊狀態面板 =====
+  // ===== 處理狀態面板 =====
   // 錯誤碼對照表：出自網站前端 chunk-3225fb1b 的 errorHandler 分支，
   // 中文訊息取自該站 i18n（2026-07 驗證）。
-  // 關鍵：只有 137 是「還在排隊」，其餘非 00 的碼前端都會把
-  // window.isEnquene 設為 false，等於整個排隊流程中止、必須重新整理。
+  // 關鍵：只有 137 是「仍在處理中」，其餘非 00 的碼前端都會把
+  // window.isEnquene 設為 false，等於整個流程結束、必須重新整理。
   const ERR_CODES = {
-    '00':  { text: '排到了，開始鎖票', level: 'ok' },
-    '137': { text: '排隊中（本輪未抽中）', level: 'wait' },
+    '00':  { text: '處理完成，進入下一步', level: 'ok' },
+    '137': { text: '處理中（本輪未通過）', level: 'wait' },
     '101': { text: '操作出現問題，請稍後再試', level: 'dead' },
     '110': { text: '流量管控中，請按確定後重試', level: 'dead' },
     '112': { text: '票種已售完或超過購票張數限制', level: 'dead' },
@@ -246,7 +246,7 @@
   };
 
   const queueState = {
-    attempts: 0,      // 排隊次數
+    attempts: 0,      // 已處理輪數
     lastCode: null,   // 最後一次 errCode
     retryAt: 0,       // 下次重試的時間戳
     dead: false,      // 流程是否已中止
@@ -282,7 +282,7 @@
     el.textContent = '';
     const title = document.createElement('div');
     title.style.cssText = 'font-weight:700;margin-bottom:4px';
-    title.textContent = `🎫 排隊狀態　${VERSION}`;
+    title.textContent = `🎫 處理狀態　${VERSION}`;
     el.appendChild(title);
 
     const addRow = (label, value, bold) => {
@@ -298,13 +298,13 @@
     };
 
     if (queueState.dead) {
-      addRow('狀態', '⛔ 流程已中止', true);
+      addRow('狀態', '⛔ 流程已結束', true);
     } else if (queueState.lastCode === '00') {
-      addRow('狀態', '✅ 已排到，鎖票中', true);
+      addRow('狀態', '✅ 已完成，進入下一步', true);
     } else {
-      addRow('狀態', '⏳ 排隊中（不是被擋）', true);
+      addRow('狀態', '⏳ 處理中（網站仍在回應）', true);
     }
-    addRow('已排隊', `${queueState.attempts} 次`);
+    addRow('已處理', `${queueState.attempts} 輪`);
     if (queueState.lastCode) {
       addRow('代碼', `${queueState.lastCode}　${info ? info.text : '未知代碼'}`);
     }
@@ -320,7 +320,7 @@
     if (queueState.dead) {
       const hint = document.createElement('div');
       hint.style.cssText = 'margin-top:6px;padding-top:6px;border-top:1px solid #eee;color:#d32f2f;font-weight:600';
-      hint.textContent = '網站已停止排隊，需重新整理頁面才能再試';
+      hint.textContent = '網站已停止處理，需重新整理頁面';
       el.appendChild(hint);
     }
   }
@@ -332,7 +332,7 @@
     if (!d || d.__tpHelperNet !== true) return;
 
     if (d.kind === 'flag') {
-      // window.isEnquene 被前端關掉 = 排隊流程中止
+      // window.isEnquene 被前端關掉 = 流程已結束
       if (d.isEnquene === false && queueState.attempts > 0 && queueState.lastCode !== '00') {
         queueState.dead = true;
         renderPanel();
@@ -349,7 +349,7 @@
     queueState.localCheck = !!body.localCheck;
 
     if (code === '137') {
-      // 137 才是「還在排隊」：waitSecond 沒給時前端用預設 15 秒
+      // 137 才是「仍在處理中」：waitSecond 沒給時前端用預設 15 秒
       queueState.dead = false;
       queueState.retryAt = Date.now() + (body.waitSecond || 15) * 1000;
     } else if (code === '00') {
@@ -413,7 +413,7 @@
   chrome.runtime.onMessage.addListener((msg) => {
     if (msg && msg.type === 'RUN_NOW') {
       doneFlags = { session: false, ticket: false };
-      // 接下來 10 分鐘內自動接續後續頁面的流程（排隊購票可能耗時，視窗要夠長）
+      // 接下來 10 分鐘內接續後續頁面的填寫（網站處理可能耗時，視窗要夠長）
       manualUntil = Date.now() + 600000;
       loadSettings().then(() => {
         const didAgree = tickAgree();
@@ -451,7 +451,7 @@
   loadSettings().then(() => {
     // 載入時自我回報，方便確認插件版本與狀態（console + DOM 標記）
     document.documentElement.setAttribute('data-tp-helper', VERSION);
-    console.log(`[TicketPlus小幫手] ${VERSION} 已載入｜自動模式=${settings.enabled ? '開' : '關'}｜票種規則=${settings.ticketRules.replace(/\n/g, '、')}`);
+    console.log(`[售票表單輔助] ${VERSION} 已載入｜自動模式=${settings.enabled ? '開' : '關'}｜票種規則=${settings.ticketRules.replace(/\n/g, '、')}`);
     setInterval(tick, 500);
   });
 })();
